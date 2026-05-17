@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AK's Video Downloader — Fast, Free & Secure</title>
+  <meta name="description" content="Download videos instantly in HD quality from YouTube, Vimeo, and more. Free, secure, no sign-up required. By AK." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ak-dark: #0a0a0f;
+      --ak-card: #111118;
+      --ak-card2: #14141d;
+      --ak-border: #1e1e2e;
+      --ak-border-hover: #2e2e44;
+      --ak-accent: #00e5a0;
+      --ak-accent-dim: rgba(0,229,160,0.12);
+      --ak-accent2: #0099ff;
+      --ak-accent2-dim: rgba(0,153,255,0.12);
+      --ak-muted: #6b6b8a;
+      --ak-text: #e8e8f0;
+      --ak-sub: #9999b5;
+      --ak-white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ak-dark);
+      color: var(--ak-text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Noise overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      background-size: 200px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .wrap { max-width: 740px; margin: 0 auto; padding: 0 24px 6rem; position: relative; z-index: 1; }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--ak-border);
+      margin-bottom: 0;
+    }
+    .nav-logo {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 1rem;
+      color: var(--ak-white);
+      letter-spacing: -0.01em;
+    }
+    .nav-logo span { color: var(--ak-accent); }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      font-size: 13px;
+      color: var(--ak-muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--ak-text); }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 5rem 0 3rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ak-accent);
+      border: 1px solid rgba(0,229,160,0.3);
+      border-radius: 100px;
+      padding: 5px 14px 5px 10px;
+      margin-bottom: 2rem;
+      animation: fadeUp 0.5s ease both;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--ak-accent);
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: clamp(2.4rem, 7vw, 4rem);
+      font-weight: 800;
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+      color: var(--ak-white);
+      margin-bottom: 1.25rem;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+    h1 em { color: var(--ak-accent); font-style: normal; }
+
+    .hero-sub {
+      font-size: 16px;
+      color: var(--ak-sub);
+      line-height: 1.7;
+      max-width: 460px;
+      margin: 0 auto 2.5rem;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    /* ── Input ── */
+    .input-wrap {
+      animation: fadeUp 0.5s 0.3s ease both;
+      margin-bottom: 1rem;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 16px;
+      padding: 8px;
+      transition: border-color .25s;
+    }
+    .input-row:focus-within { border-color: rgba(0,229,160,0.4); }
+    .input-row input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--ak-text);
+      padding: 10px 14px;
+    }
+    .input-row input::placeholder { color: var(--ak-muted); }
+    .dl-btn {
+      background: var(--ak-accent);
+      color: #000;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 24px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity .2s, transform .1s, box-shadow .2s;
+    }
+    .dl-btn:hover { opacity: 0.9; box-shadow: 0 0 20px rgba(0,229,160,0.25); }
+    .dl-btn:active { transform: scale(0.97); }
+
+    .format-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 3.5rem;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+    .fmt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      font-size: 13px;
+      color: var(--ak-sub);
+      user-select: none;
+    }
+    .fmt:hover, .fmt.active {
+      border-color: rgba(0,229,160,0.4);
+      background: var(--ak-accent-dim);
+      color: var(--ak-accent);
+    }
+    .fmt-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--ak-border);
+      transition: background .2s;
+    }
+    .fmt.active .fmt-dot, .fmt:hover .fmt-dot { background: var(--ak-accent); }
+
+    /* ── Section label ── */
+    .section-label {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ak-muted);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Quality ── */
+    .quality-card {
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .quality-card .sec-title {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ak-muted);
+      margin-bottom: 1rem;
+    }
+    .q-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+    .q-opt {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--ak-border);
+      color: var(--ak-muted);
+      cursor: pointer;
+      transition: all .2s;
+      user-select: none;
+    }
+    .q-opt:hover { border-color: var(--ak-border-hover); color: var(--ak-text); }
+    .q-opt.sel {
+      background: var(--ak-accent-dim);
+      border-color: rgba(0,229,160,0.5);
+      color: var(--ak-accent);
+    }
+
+    /* ── Features ── */
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 3rem;
+    }
+    @media(max-width: 480px) { .features { grid-template-columns: 1fr; } }
+    .feat {
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 16px;
+      padding: 1.4rem;
+      transition: border-color .25s, transform .25s;
+    }
+    .feat:hover { border-color: var(--ak-border-hover); transform: translateY(-2px); }
+    .feat-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--ak-accent-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .feat-icon.blue { background: var(--ak-accent2-dim); }
+    .feat-icon svg {
+      width: 18px; height: 18px;
+      stroke: var(--ak-accent);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .feat-icon.blue svg { stroke: var(--ak-accent2); }
+    .feat h3 {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ak-white);
+      margin-bottom: 8px;
+    }
+    .feat p { font-size: 13px; color: var(--ak-sub); line-height: 1.65; }
+
+    /* ── Platforms ── */
+    .platforms {
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+    .plat-list {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+    .plat {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--ak-border);
+      color: var(--ak-muted);
+    }
+
+    /* ── Stats ── */
+    .stats {
+      display: flex;
+      background: var(--ak-card);
+      border: 1px solid var(--ak-border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 4rem;
+    }
+    .stat {
+      flex: 1;
+      text-align: center;
+      padding: 1.5rem 0.5rem;
+      border-right: 1px solid var(--ak-border);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--ak-white);
+      letter-spacing: -0.02em;
+    }
+    .stat-lbl { font-size: 11px; color: var(--ak-muted); margin-top: 5px; }
+
+    /* ── CTA ── */
+    .cta-band {
+      background: linear-gradient(135deg, rgba(0,229,160,0.08) 0%, rgba(0,153,255,0.06) 100%);
+      border: 1px solid rgba(0,229,160,0.2);
+      border-radius: 20px;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+    .cta-band h2 {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 800;
+      color: var(--ak-white);
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.02em;
+    }
+    .cta-band p { font-size: 14px; color: var(--ak-sub); margin-bottom: 1.75rem; }
+    .cta-btn {
+      display: inline-block;
+      background: var(--ak-accent);
+      color: #000;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.06em;
+      padding: 14px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: opacity .2s, box-shadow .2s;
+    }
+    .cta-btn:hover { opacity: 0.88; box-shadow: 0 0 28px rgba(0,229,160,0.28); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--ak-border);
+      padding-top: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    footer p { font-size: 12px; color: var(--ak-muted); }
+    footer span { color: var(--ak-accent); }
+    .foot-links { display: flex; gap: 1.25rem; }
+    .foot-links a { font-size: 12px; color: var(--ak-muted); text-decoration: none; transition: color .2s; }
+    .foot-links a:hover { color: var(--ak-text); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--ak-accent);
+      color: #000;
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 11px 24px;
+      border-radius: 100px;
+      white-space: nowrap;
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s, transform .3s;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Animations ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- Nav -->
+  <nav>
+    <div class="nav-logo">AK<span>.</span>dl</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#platforms">Platforms</a>
+      <a href="#download">Download</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="download">
+    <div class="badge"><span class="badge-dot"></span>By AK — a developer you can trust</div>
+    <h1>Download any video<br><em>instantly.</em></h1>
+    <p class="hero-sub">Fast, secure, and completely free. Save videos in HD from YouTube, Vimeo, and more — no sign-up, no ads, ever.</p>
+
+    <div class="input-wrap">
+      <div class="input-row">
+        <input type="url" id="urlInput" placeholder="Paste video URL here — e.g. https://youtube.com/watch?v=..." autocomplete="off" />
+        <button class="dl-btn" onclick="handleDownload()">Download</button>
+      </div>
+    </div>
+
+    <div class="format-row" id="fmtRow">
+      <div class="fmt active" onclick="selectFmt(this)"><span class="fmt-dot"></span>MP4 Video</div>
+      <div class="fmt" onclick="selectFmt(this)"><span class="fmt-dot"></span>MP3 Audio</div>
+      <div class="fmt" onclick="selectFmt(this)"><span class="fmt-dot"></span>WebM</div>
+      <div class="fmt" onclick="selectFmt(this)"><span class="fmt-dot"></span>AVI</div>
+    </div>
+  </section>
+
+  <!-- Quality -->
+  <div class="section-label">select quality</div>
+  <div class="quality-card" style="margin-bottom:3rem">
+    <div class="sec-title">Resolution</div>
+    <div class="q-opts" id="qOpts">
+      <div class="q-opt sel" onclick="selectQ(this)">1080p HD</div>
+      <div class="q-opt" onclick="selectQ(this)">720p HD</div>
+      <div class="q-opt" onclick="selectQ(this)">480p</div>
+      <div class="q-opt" onclick="selectQ(this)">360p</div>
+      <div class="q-opt" onclick="selectQ(this)">Audio only</div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section-label" id="features">why AK's downloader</div>
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <h3>Lightning fast</h3>
+      <p>Optimized server pipeline delivers your file in seconds, not minutes. Even 1080p downloads finish fast.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon blue">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <h3>100% secure</h3>
+      <p>No tracking, no ads, no sign-up ever. Your downloads and browsing history stay completely private.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <h3>Multi-format</h3>
+      <p>MP4, MP3, WebM, AVI — pick exactly the format and quality that fits your device and workflow.</p>
+    </div>
+    <div class="feat">
+      <div class="feat-icon blue">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3>Always free</h3>
+      <p>No hidden fees, no premium tiers, no paywalls. AK's downloader is free today and will stay free.</p>
+    </div>
+  </div>
+
+  <!-- Platforms -->
+  <div class="section-label" id="platforms">supported platforms</div>
+  <div class="platforms" style="margin-bottom:3rem">
+    <p style="font-size:13px;color:var(--ak-sub)">Works seamlessly with all major video platforms</p>
+    <div class="plat-list">
+      <div class="plat">YouTube</div>
+      <div class="plat">Vimeo</div>
+      <div class="plat">Dailymotion</div>
+      <div class="plat">Facebook</div>
+      <div class="plat">Twitter / X</div>
+      <div class="plat">Instagram</div>
+      <div class="plat">TikTok</div>
+      <div class="plat">Reddit</div>
+      <div class="plat">+ many more</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section-label">by the numbers</div>
+  <div class="stats" style="margin-bottom:3rem">
+    <div class="stat"><div class="stat-num">50M+</div><div class="stat-lbl">Videos downloaded</div></div>
+    <div class="stat"><div class="stat-num">1080p</div><div class="stat-lbl">Max quality</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-lbl">Ads ever</div></div>
+    <div class="stat"><div class="stat-num">Free</div><div class="stat-lbl">Always</div></div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-band">
+    <h2>Ready to start downloading?</h2>
+    <p>Paste any video link above and get your file in seconds. No account needed.</p>
+    <a href="#download" class="cta-btn">Get started — it's free</a>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>Built with care by <span>AK</span> &mdash; fast, free, and yours to keep.</p>
+    <div class="foot-links">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+  </footer>
+</div>
+
+<!-- Toast -->
+<div id="toast">Preparing your download...</div>
+
+<script>
+  function selectFmt(el) {
+    document.querySelectorAll('.fmt').forEach(f => f.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function selectQ(el) {
+    document.querySelectorAll('.q-opt').forEach(q => q.classList.remove('sel'));
+    el.classList.add('sel');
+  }
+
+  function handleDownload() {
+  const urlInput = document.getElementById('urlInput');
+  const url = urlInput.value.trim();
+
+  if (!url) {
+    showToast('Please paste a video URL first...');
+    return;
+  }
+
+  const fmt = document.querySelector('.fmt.active')?.textContent.trim() || 'mp4';
+  const quality = document.querySelector('.q-opt.sel')?.textContent.trim() || '1080p';
+
+  showToast('Connecting to server...');
+
+  window.location.href =
+    `http://127.0.0.1:5000/download?url=${encodeURIComponent(url)}&fmt=${fmt}&quality=${quality}`;
+}
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  // Smooth scroll for nav links
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+</script>
+</body>
+</html>
